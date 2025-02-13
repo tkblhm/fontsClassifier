@@ -34,53 +34,61 @@ class FontCNN(nn.Module):
 
 # Instantiate model
 model = FontCNN()
-
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Define loss and optimizer
 criterion = nn.CrossEntropyLoss()  # Binary Cross Entropy Loss
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 
-def train_model(model, train_loader, val_loader, criterion, optimizer, epochs=10):
+class Trainer:
+    def __init__(self, model, train_loader, val_loader, criterion, optimizer):
+        self.model = model
+        self.train_loader = train_loader
+        self.val_loader = val_loader
+        self.criterion = criterion
+        self.optimizer = optimizer
 
-    for epoch in range(epochs):
-        model.train()
-        running_loss = 0.0
+    def train_model(self, epochs=10):
+
+        for epoch in range(epochs):
+            self.model.train()
+            running_loss = 0.0
+            correct, total = 0, 0
+
+            for images, labels in self.train_loader:
+                # labels = labels.to("cpu", dtype=torch.float)
+                self.optimizer.zero_grad()
+                outputs = self.model(images)
+
+                loss = self.criterion(outputs, labels)
+                loss.backward()
+                self.optimizer.step()
+
+                running_loss += loss.item()
+                correct += (outputs.argmax(1) == labels).sum().item()
+                total += labels.size(0)
+
+            train_acc = 100 * correct / total
+            val_acc = self.evaluate_model()
+
+            print(
+                f"Epoch [{epoch + 1}/{epochs}], Loss: {running_loss:.4f}, Train Acc: {train_acc:.2f}%, Val Acc: {val_acc:.2f}%")
+
+        print("Training Complete.")
+
+
+    # Validation function
+    def evaluate_model(self):
+        self.model.eval()
         correct, total = 0, 0
 
-        for images, labels in train_loader:
-            # labels = labels.to("cpu", dtype=torch.float)
-            optimizer.zero_grad()
-            outputs = model(images)
+        with torch.no_grad():  # No gradients needed for validation
+            for images, labels in self.val_loader:
+                outputs = self.model(images)
+                correct += (outputs.argmax(1) == labels).sum().item()
+                total += labels.size(0)
 
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-
-            running_loss += loss.item()
-            correct += (outputs.argmax(1) == labels).sum().item()
-            total += labels.size(0)
-
-        train_acc = 100 * correct / total
-        val_acc = evaluate_model(model, val_loader)
-
-        print(
-            f"Epoch [{epoch + 1}/{epochs}], Loss: {running_loss:.4f}, Train Acc: {train_acc:.2f}%, Val Acc: {val_acc:.2f}%")
-
-    print("Training Complete.")
-
-
-# Validation function
-def evaluate_model(model, dataloader):
-    model.eval()
-    correct, total = 0, 0
-
-    with torch.no_grad():  # No gradients needed for validation
-        for images, labels in dataloader:
-            outputs = model(images)
-            correct += (outputs.argmax(1) == labels).sum().item()
-            total += labels.size(0)
-
-    return 100 * correct / total
+        return 100 * correct / total
 
 
 # Split dataset
@@ -94,7 +102,10 @@ train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 
 print(f"Training Samples: {train_size}, Validation Samples: {val_size}")
-train_model(model, train_loader, val_loader, criterion, optimizer, epochs=20)
+trainer = Trainer(model, train_loader, val_loader, criterion, optimizer)
+trainer.train_model(epochs=20)
+
+
 #
 # def predict_font(image_path, model):
 #     model.eval()
