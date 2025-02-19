@@ -5,6 +5,7 @@ import torch.optim as optim
 from torch.utils.data import random_split
 from torch.utils.data import DataLoader
 from image_loader import *
+import matplotlib.pyplot as plt
 
 class FontCNN(nn.Module):
     def __init__(self):
@@ -32,24 +33,41 @@ class FontCNN(nn.Module):
         # x = torch.sigmoid(self.fc3(x))  # Sigmoid for binary classification
         return x
 
-# Instantiate model
-model = FontCNN()
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# Define loss and optimizer
-criterion = nn.CrossEntropyLoss()  # Binary Cross Entropy Loss
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-
 
 class Trainer:
-    def __init__(self, model, train_loader, val_loader, criterion, optimizer):
+    def __init__(self, model, device, train_loader, val_loader, criterion, optimizer):
         self.model = model
+        self.device = device
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.criterion = criterion
         self.optimizer = optimizer
 
-    def train_model(self, epochs=10):
+        self.train_losses = []
+        self.val_losses = []
+        self.train_acc = []
+        self.val_acc = []
+    def load_model(self, file):
+        self.model.load_state_dict(torch.load(file))
+        self.model.to(device)
 
+    def save_model(self, file):
+        torch.save(self.model.state_doct(), file)
+
+    def plot(self):
+        plt.plot(self.train_losses, label="Training Loss")
+        plt.plot(self.val_losses, label="Validation Loss")
+        plt.xlabel("Epoch")
+        plt.ylabel("Loss")
+        plt.legend()
+        plt.show()
+        
+    def train_model(self, epochs=10, plot=True):
+        if plot:
+            self.train_losses = []
+            self.val_losses = []
+            self.train_acc = []
+            self.val_acc = []
         for epoch in range(epochs):
             self.model.train()
             running_loss = 0.0
@@ -57,6 +75,7 @@ class Trainer:
 
             for images, labels in self.train_loader:
                 # labels = labels.to("cpu", dtype=torch.float)
+                images, labels = images.to(self.device), labels.to(self.device)
                 self.optimizer.zero_grad()
                 outputs = self.model(images)
 
@@ -69,8 +88,12 @@ class Trainer:
                 total += labels.size(0)
 
             train_acc = 100 * correct / total
-            val_acc = self.evaluate_model()
-
+            val_loss, val_acc = self.evaluate_model()
+            if plot:
+                self.train_losses.append(running_loss)
+                self.train_acc.append(train_acc)
+                self.val_losses.append(val_loss)
+                self.val_acc.append(val_acc)
             print(
                 f"Epoch [{epoch + 1}/{epochs}], Loss: {running_loss:.4f}, Train Acc: {train_acc:.2f}%, Val Acc: {val_acc:.2f}%")
 
@@ -81,29 +104,39 @@ class Trainer:
     def evaluate_model(self):
         self.model.eval()
         correct, total = 0, 0
-
+        loss = 0
         with torch.no_grad():  # No gradients needed for validation
             for images, labels in self.val_loader:
+                images, labels = images.to(self.device), labels.to(self.device)
                 outputs = self.model(images)
+                loss += self.criterion(outputs, labels).item()
                 correct += (outputs.argmax(1) == labels).sum().item()
                 total += labels.size(0)
 
-        return 100 * correct / total
+        return loss, 100 * correct / total
 
+# Instantiate model
+model = FontCNN()
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# Define loss and optimizer
+criterion = nn.CrossEntropyLoss()  # Binary Cross Entropy Loss
+optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-# Split dataset
-dataset = FontDataset(DATASET_PATH, transform=transform)
-train_size = int(0.8 * len(dataset))
-val_size = len(dataset) - train_size
-train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
+if __name__ == '__main__':
 
-# Create DataLoaders
-train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
+    # Split dataset
+    dataset = FontDataset(DATASET_PATH, transform=transform)
+    train_size = int(0.8 * len(dataset))
+    val_size = len(dataset) - train_size
+    train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
 
-print(f"Training Samples: {train_size}, Validation Samples: {val_size}")
-trainer = Trainer(model, train_loader, val_loader, criterion, optimizer)
-trainer.train_model(epochs=20)
+    # Create DataLoaders
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
+
+    print(f"Training Samples: {train_size}, Validation Samples: {val_size}")
+    trainer = Trainer(model, device, train_loader, val_loader, criterion, optimizer)
+    trainer.train_model(epochs=20)
 
 
 #
