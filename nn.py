@@ -36,7 +36,7 @@ class FontCNN(nn.Module):
 
 class Trainer:
     def __init__(self, model, device, train_loader, val_loader, criterion, optimizer):
-        self.model = model
+        self.model = model.to(device)
         self.device = device
         self.train_loader = train_loader
         self.val_loader = val_loader
@@ -52,7 +52,7 @@ class Trainer:
         self.model.to(device)
 
     def save_model(self, file):
-        torch.save(self.model.state_doct(), file)
+        torch.save(self.model.state_dict(), file)
 
     def plot(self):
         plt.plot(self.train_losses, label="Training Loss")
@@ -136,7 +136,8 @@ if __name__ == '__main__':
 
     print(f"Training Samples: {train_size}, Validation Samples: {val_size}")
     trainer = Trainer(model, device, train_loader, val_loader, criterion, optimizer)
-    trainer.train_model(epochs=20)
+    trainer.train_model(epochs=10)
+    trainer.save_model("weights.pth")
 
 
 #
