@@ -47,8 +47,15 @@ class Trainer:
         self.val_losses = []
         self.train_acc = []
         self.val_acc = []
+
+        self.transform = transforms.Compose([
+            transforms.Grayscale(),
+            transforms.Resize((64, 64)),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,))
+        ])
     def load_model(self, file):
-        self.model.load_state_dict(torch.load(file))
+        self.model.load_state_dict(torch.load(file, map_location=self.device))
         self.model.to(device)
 
     def save_model(self, file):
@@ -61,6 +68,20 @@ class Trainer:
         plt.ylabel("Loss")
         plt.legend()
         plt.show()
+
+    def predict(self, image_path):
+        self.model.eval()
+
+        img = Image.open(image_path).convert("L")
+        img = self.transform(img).unsqueeze(0).to(self.device)
+        with torch.no_grad():
+            output = model(img)
+
+        # Get the predicted class
+        predicted_class = torch.argmax(output, dim=1).item()
+        print(f"Predicted Font: {predicted_class}")
+
+
         
     def train_model(self, epochs=10, plot=True):
         if plot:
@@ -136,28 +157,9 @@ if __name__ == '__main__':
 
     print(f"Training Samples: {train_size}, Validation Samples: {val_size}")
     trainer = Trainer(model, device, train_loader, val_loader, criterion, optimizer)
-    trainer.train_model(epochs=10)
-    trainer.save_model("weights.pth")
+    trainer.load_model("weights.pth")
+    trainer.predict(r"D:\gyt\font_dataset\Impact\0-7.png")
+    # trainer.train_model(epochs=10)
+    # trainer.save_model("weights.pth")
 
 
-#
-# def predict_font(image_path, model):
-#     model.eval()
-#     transform = transforms.Compose([
-#         transforms.Grayscale(),
-#         transforms.Resize((64, 64)),
-#         transforms.ToTensor(),
-#         transforms.Normalize((0.5,), (0.5,))
-#     ])
-#
-#     img = Image.open(image_path)
-#     img = transform(img).unsqueeze(0)
-#     output = model(img).item()
-#
-#     if output > 0.5:
-#         print(f"Predicted Font: {FONT_CLASSES[1]} (Courier New)")
-#     else:
-#         print(f"Predicted Font: {FONT_CLASSES[0]} (Comic Sans MS)")
-#
-# # Example usage
-# predict_font(r"C:\Users\hxtx1\Pictures\Screenshots\屏幕截图 2025-02-07 141325.png", model)
