@@ -6,6 +6,7 @@ from torch.utils.data import random_split
 from torch.utils.data import DataLoader
 from image_loader import *
 import matplotlib.pyplot as plt
+import numpy as np
 
 class FontCNN(nn.Module):
     def __init__(self):
@@ -73,13 +74,19 @@ class Trainer:
         self.model.eval()
 
         img = Image.open(image_path).convert("L")
-        img = self.transform(img).unsqueeze(0).to(self.device)
+        img = self.transform(img)
+
+        print("img:", img)
+        np.savetxt("D:gyt\\array2.txt", img.view(-1).numpy())
+        img = img.unsqueeze(0).to(self.device)
         with torch.no_grad():
             output = model(img)
 
         # Get the predicted class
         predicted_class = torch.argmax(output, dim=1).item()
+        print("distribution:", output)
         print(f"Predicted Font: {predicted_class}")
+        return predicted_class
 
 
         
@@ -158,8 +165,15 @@ if __name__ == '__main__':
     print(f"Training Samples: {train_size}, Validation Samples: {val_size}")
     trainer = Trainer(model, device, train_loader, val_loader, criterion, optimizer)
     trainer.load_model("weights.pth")
-    # trainer.predict(r"D:\gyt\font_dataset\Impact\0-7.png")
-    trainer.train_model(epochs=5)
-    trainer.save_model("weights.pth")
-
+    trainer.predict(r"C:\Users\hxtx1\Pictures\Screenshots\屏幕截图 2025-02-26 133458.png")
+    # trainer.predict(f"D:\\gyt\\font_dataset\\BrushScript\\0-1.png")
+    # acc = 0
+    # for i in range(20):
+    #     font = FONT_CLASSES[i]
+    #     for j in range(100):
+    #         result = trainer.predict(f"D:\\gyt\\font_dataset\\{font}\\0-{j}.png")
+    #         acc += (result == i)
+    # print("acc:", acc)
+    # trainer.train_model(epochs=5)
+    # trainer.save_model("weights.pth")
 
