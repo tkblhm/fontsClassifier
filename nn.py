@@ -158,8 +158,8 @@ if __name__ == '__main__':
     print(f"Training Samples: {train_size}, Validation Samples: {val_size}")
     trainer = Trainer(model, device, train_loader, val_loader, criterion, optimizer)
     trainer.load_model("weights.pth")
-    trainer.predict(r"D:\gyt\font_dataset\Impact\0-7.png")
-    # trainer.train_model(epochs=10)
-    # trainer.save_model("weights.pth")
+    # trainer.predict(r"D:\gyt\font_dataset\Impact\0-7.png")
+    trainer.train_model(epochs=5)
+    trainer.save_model("weights.pth")
 
 
