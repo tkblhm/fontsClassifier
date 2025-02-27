@@ -48,7 +48,7 @@ def generate_images():
         source_dir = os.path.join(FONT_PATH, font)
         for idx, path in enumerate(os.listdir(source_dir)):
             for i in range(NUM_IMAGES_PER_FONT):
-                for size in range(14, 20, 2):
+                for size in range(14, 60, 2):
                     text = "".join(random.choices(TEXT_SAMPLES, k=random.randint(1, 6)))  # Random short text
                     img = generate_image(os.path.join(source_dir, path), text, font_size=size)
 
@@ -60,7 +60,7 @@ def generate_images():
 # Data Augmentation (Applied during loading)
 transform = transforms.Compose([
     transforms.RandomRotation(10),       # Rotate image randomly by ±10 degrees
-    transforms.RandomAffine(degrees=0, translate=(0.1, 0.1)),  # Small translation
+    transforms.RandomAffine(degrees=0, translate=(0.1, 0.1), fill=(255,)),  # Small translation
     transforms.ColorJitter(brightness=0.2, contrast=0.2),  # Adjust brightness and contrast
     transforms.ToTensor(),               # Convert image to tensor [0,1] range
     transforms.Normalize((0.5,), (0.5,)) # Normalize to mean 0, std 1

@@ -31,7 +31,7 @@ class FontCNN(nn.Module):
         x = F.relu(self.fc1(x))
         x = self.dropout(x)
         x = F.relu(self.fc2(x))
-        x = F.log_softmax(self.fc2(x), dim=1)
+        x = F.log_softmax(self.fc3(x), dim=1)
         return x
 
 
@@ -148,4 +148,4 @@ model = FontCNN(len(FONT_CLASSES))
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Define loss and optimizer
 criterion = nn.CrossEntropyLoss()  # Binary Cross Entropy Loss
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+optimizer = optim.Adam(model.parameters(), lr=0.0001)
