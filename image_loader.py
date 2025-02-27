@@ -16,18 +16,18 @@ FONT_PATH = "fonts"
 os.makedirs(DATASET_PATH, exist_ok=True)
 
 # Parameters
-NUM_IMAGES_PER_FONT = 1000  # Generate 500 images per font
+NUM_IMAGES_PER_FONT = 400
 IMAGE_SIZE = (64, 64)
 TEXT_SAMPLES = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
 
 # Function to generate an image with a given font
-def generate_image(font_path, text, image_size=IMAGE_SIZE):
+def generate_image(font_path, text, font_size=40, image_size=IMAGE_SIZE):
     img = Image.new("L", image_size, color=255)  # Create white background
     draw = ImageDraw.Draw(img)
 
     try:
-        font = ImageFont.truetype(font_path, size=40)  # Set font size
+        font = ImageFont.truetype(font_path, size=font_size)  # Set font size
     except IOError:
         print(f"Font not found: {font_path}")
         return None
@@ -48,11 +48,12 @@ def generate_images():
         source_dir = os.path.join(FONT_PATH, font)
         for idx, path in enumerate(os.listdir(source_dir)):
             for i in range(NUM_IMAGES_PER_FONT):
-                text = "".join(random.choices(TEXT_SAMPLES, k=random.randint(1, 4)))  # Random short text
-                img = generate_image(os.path.join(source_dir, path), text)
+                for size in range(14, 20, 2):
+                    text = "".join(random.choices(TEXT_SAMPLES, k=random.randint(1, 6)))  # Random short text
+                    img = generate_image(os.path.join(source_dir, path), text, font_size=size)
 
-                if img:
-                    img.save(os.path.join(font_dir, f"{idx}-{i}.png"))
+                    if img:
+                        img.save(os.path.join(font_dir, f"{idx}-{size}-{i}.png"))
 
     print("Dataset generation complete.")
 

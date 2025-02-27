@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 class FontCNN(nn.Module):
-    def __init__(self):
+    def __init__(self, num_fonts):
         super(FontCNN, self).__init__()
         self.conv1 = nn.Conv2d(1, 32, kernel_size=3, padding=1)
         self.bn1 = nn.BatchNorm2d(32)  # Batch Normalization
@@ -21,7 +21,7 @@ class FontCNN(nn.Module):
         self.dropout = nn.Dropout(0.5)  # Dropout for regularization
         self.fc1 = nn.Linear(128 * 8 * 8, 128)
         self.fc2 = nn.Linear(128, 64)
-        self.fc3 = nn.Linear(64, 1)
+        self.fc3 = nn.Linear(64, num_fonts)
 
     def forward(self, x):
         x = self.pool(F.relu(self.bn1(self.conv1(x))))
@@ -30,8 +30,8 @@ class FontCNN(nn.Module):
         x = torch.flatten(x, start_dim=1)
         x = F.relu(self.fc1(x))
         x = self.dropout(x)
+        x = F.relu(self.fc2(x))
         x = F.log_softmax(self.fc2(x), dim=1)
-        # x = torch.sigmoid(self.fc3(x))  # Sigmoid for binary classification
         return x
 
 
@@ -144,36 +144,8 @@ class Trainer:
         return loss, 100 * correct / total
 
 # Instantiate model
-model = FontCNN()
+model = FontCNN(len(FONT_CLASSES))
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # Define loss and optimizer
 criterion = nn.CrossEntropyLoss()  # Binary Cross Entropy Loss
 optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-if __name__ == '__main__':
-
-    # Split dataset
-    dataset = FontDataset(DATASET_PATH, transform=transform)
-    train_size = int(0.8 * len(dataset))
-    val_size = len(dataset) - train_size
-    train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
-
-    # Create DataLoaders
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
-
-    print(f"Training Samples: {train_size}, Validation Samples: {val_size}")
-    trainer = Trainer(model, device, train_loader, val_loader, criterion, optimizer)
-    trainer.load_model("weights.pth")
-    trainer.predict(r"C:\Users\hxtx1\Pictures\Screenshots\屏幕截图 2025-02-26 133458.png")
-    # trainer.predict(f"D:\\gyt\\font_dataset\\BrushScript\\0-1.png")
-    # acc = 0
-    # for i in range(20):
-    #     font = FONT_CLASSES[i]
-    #     for j in range(100):
-    #         result = trainer.predict(f"D:\\gyt\\font_dataset\\{font}\\0-{j}.png")
-    #         acc += (result == i)
-    # print("acc:", acc)
-    # trainer.train_model(epochs=5)
-    # trainer.save_model("weights.pth")
-
