@@ -51,7 +51,7 @@ class Trainer:
 
         self.transform = transforms.Compose([
             transforms.Grayscale(),
-            transforms.Resize((64, 64)),
+            transforms.CenterCrop((64, 64)),
             transforms.ToTensor(),
             transforms.Normalize((0.5,), (0.5,))
         ])
@@ -85,7 +85,8 @@ class Trainer:
         # Get the predicted class
         predicted_class = torch.argmax(output, dim=1).item()
         print("distribution:", output)
-        print(f"Predicted Font: {predicted_class}")
+        if predicted_class<len(FONT_CLASSES):
+            print(f"Predicted Font: {predicted_class} - {FONT_CLASSES[predicted_class]}")
         return predicted_class
 
 
